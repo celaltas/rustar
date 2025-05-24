@@ -1,6 +1,10 @@
 use archive::Archiver;
 use clap::{Parser, Subcommand};
+use std::path::Path;
+
 mod archive;
+mod header;
+mod validation;
 
 type TarResult<T> = Result<T, Box<dyn std::error::Error>>;
 
@@ -16,25 +20,34 @@ enum Command {
     Create { archive: String, files: Vec<String> },
     List { archive: String },
     Append { archive: String, files: Vec<String> },
-    Extract { archive: String },
+    Extract { archive: String, output_dir: String },
 }
 
 pub fn run() -> TarResult<()> {
     let cli = Cli::parse();
-    let archiver = Archiver::new();
+    let allowed_extensions = vec!["tar".to_string(), "rustar".to_string()];
+    let archiver = Archiver::new(allowed_extensions);
 
     match cli.command {
         Command::Create { archive, files } => {
-            archiver.create(&archive, files)?;
+            let archive = Path::new(&archive);
+            archiver.create(archive, files)?;
         }
         Command::List { archive } => {
-            archiver.list(&archive)?;
+            let archive = Path::new(&archive);
+            archiver.list(archive)?;
         }
         Command::Append { archive, files } => {
-            archiver.append(&archive, files)?;
+            let archive = Path::new(&archive);
+            archiver.append(archive, files)?;
         }
-        Command::Extract { archive } => {
-            archiver.extract(&archive)?;
+        Command::Extract {
+            archive,
+            output_dir,
+        } => {
+            let archive = Path::new(&archive);
+            let output_dir = Path::new(&output_dir);
+            archiver.extract(archive, output_dir)?;
         }
     }
     Ok(())
